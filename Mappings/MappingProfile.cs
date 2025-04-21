@@ -4,6 +4,7 @@ using TourManagementSystem.DTOs.Booking;
 using TourManagementSystem.DTOs.Complaint;
 using TourManagementSystem.DTOs.Message;
 using TourManagementSystem.DTOs.Review;
+using TourManagementSystem.DTOs.TripCategory;
 using TourManagementSystem.DTOs.TripPackage;
 using TourManagementSystem.DTOs.User;
 using TourManagementSystem.Models;
@@ -38,6 +39,9 @@ namespace TourManagementSystem.Mappings
             // 📅 BOOKING
             CreateMap<CreateBookingDto, Booking>();
             CreateMap<Booking, BookingResponseDto>();
+
+            // Category
+            CreateMap<AddTripCategoryDto,TripCategory>();
         }
     }
 }

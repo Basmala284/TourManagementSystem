@@ -17,6 +17,8 @@ namespace TourManagementSystem.Models.Entities
         public string StartDate { get; set; }
         public string EndDate { get; set; }
         public string Status { get; set; }
+        public int AvailableSeats { get; set; }
+
 
 
         [ForeignKey("TravelAgency")]
