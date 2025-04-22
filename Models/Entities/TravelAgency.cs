@@ -9,7 +9,8 @@ namespace TourManagementSystem.Models.Entities
         public int AgencyID { get; set; }    
         public bool IsApproved { get; set; }
         public string Address { get; set; }
-
+        public string FullName { get; set; }
+        public string Email { get; set; }
         [ForeignKey("User")]
         public int UserID { get; set; }
         public User User { get; set; }

@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using TourManagementSystem.DTOs;
+using TourManagementSystem.DTOs.Agency;
 using TourManagementSystem.DTOs.Booking;
 using TourManagementSystem.DTOs.Complaint;
 using TourManagementSystem.DTOs.Message;
@@ -38,6 +38,12 @@ namespace TourManagementSystem.Mappings
             // 📅 BOOKING
             CreateMap<CreateBookingDto, Booking>();
             CreateMap<Booking, BookingResponseDto>();
+
+            // 🏢 AGENCY
+          
+            CreateMap<CreateAgencyDto, TravelAgency>();
+            CreateMap<UpdateAgencyDto, TravelAgency>();
+            
         }
     }
 }
