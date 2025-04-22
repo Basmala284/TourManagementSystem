@@ -20,6 +20,7 @@ namespace TourManagementSystem.Data
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Complaint> Complaints { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<TripCategory> TripCategories { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

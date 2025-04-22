@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using TourManagementSystem.Data;
 
 namespace TourManagementSystem.Controllers
 {
@@ -7,5 +8,11 @@ namespace TourManagementSystem.Controllers
     [ApiController]
     public class AgencyController : ControllerBase
     {
+        private readonly AppDbContext dbContext;
+
+        public AgencyController(AppDbContext dbContext) {
+            this.dbContext = dbContext;
+        }
+
     }
 }

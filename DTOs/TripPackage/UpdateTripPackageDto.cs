@@ -19,5 +19,6 @@ namespace TourManagementSystem.DTOs.TripPackage
         [ForeignKey("TravelAgency")]
         public int TravelAgencyId { get; set; }
         public TravelAgency TravelAgency { get; set; }
+        public int AvailableSeat { get; set; }
     }
 }

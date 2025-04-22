@@ -1,10 +1,8 @@
 ﻿namespace TourManagementSystem.DTOs.TripCategory
 {
-    public class AddTripCategoryDto
+    public class updateCategoryDto
     {
         public String Name { get; set; }
         public string Description { get; set; }
-
-
     }
 }

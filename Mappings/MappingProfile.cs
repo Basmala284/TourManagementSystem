@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using TourManagementSystem.DTOs;
+using TourManagementSystem.DTOs.Agency;
 using TourManagementSystem.DTOs.Booking;
 using TourManagementSystem.DTOs.Complaint;
 using TourManagementSystem.DTOs.Message;
@@ -26,6 +27,8 @@ namespace TourManagementSystem.Mappings
             CreateMap<TripPackage, TripPackageResponseDto>().ReverseMap();
             CreateMap<CreateTripPackageDto, TripPackage>();
             CreateMap<UpdateTripPackageDto, TripPackage>();
+            CreateMap<TripPackageDto, TripPackage>();
+
 
             // 📝 REVIEW
             CreateMap<CreateReviewDto, Review>();
@@ -39,9 +42,19 @@ namespace TourManagementSystem.Mappings
             // 📅 BOOKING
             CreateMap<CreateBookingDto, Booking>();
             CreateMap<Booking, BookingResponseDto>();
+            CreateMap<BookingStatusDto, Booking>();
+
 
             // Category
             CreateMap<AddTripCategoryDto,TripCategory>();
+            CreateMap<updateCategoryDto, TripCategory>();
+
+            // Agency
+            CreateMap<CreateAgencyDto,TravelAgency>();
+            CreateMap<UpdateAgencyDto,TravelAgency>();
+
+
+
         }
     }
 }
