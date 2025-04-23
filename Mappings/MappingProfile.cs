@@ -28,6 +28,8 @@ namespace TourManagementSystem.Mappings
             CreateMap<CreateTripPackageDto, TripPackage>();
             CreateMap<UpdateTripPackageDto, TripPackage>();
             CreateMap<TripPackageDto, TripPackage>();
+            CreateMap<TripPackageResponseDto, TripPackage>();
+
 
 
             // 📝 REVIEW
@@ -38,6 +40,7 @@ namespace TourManagementSystem.Mappings
 
             // ❗ COMPLAINT
             CreateMap<CreateComplaintDto, Complaint>();
+            CreateMap<RespondComplaintDto, Complaint>();
 
             // 📅 BOOKING
             CreateMap<CreateBookingDto, Booking>();
@@ -52,7 +55,7 @@ namespace TourManagementSystem.Mappings
             // Agency
             CreateMap<CreateAgencyDto,TravelAgency>();
             CreateMap<UpdateAgencyDto,TravelAgency>();
-
+            CreateMap<TravelAgencyDto,TravelAgency>();
 
 
         }

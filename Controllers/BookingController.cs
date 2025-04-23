@@ -18,12 +18,18 @@ namespace TourManagementSystem.Controllers
             this.dbContext = DbContext;
         }
 
+
+        // GetAllBooking  //get all booking for admin api
+
         [HttpGet]
         public IActionResult GetAllBooking()
         {
             var AllBooking = dbContext.Bookings.ToList();
             return Ok(AllBooking);
         }
+
+
+        //Add Booking (tourist)
 
         [HttpPost]
         public IActionResult CreateBooking(CreateBookingDto createBookingdto)
@@ -32,7 +38,8 @@ namespace TourManagementSystem.Controllers
             {
                 TouristId = createBookingdto.TouristId,
                 TourPackageId = createBookingdto.TourPackageId,
-                BookingDate = createBookingdto.BookingDate
+                BookingDate = createBookingdto.BookingDate,
+                Status = "pending"
             };
             dbContext.Bookings.Add(BookingEntity);
             try
@@ -47,9 +54,11 @@ namespace TourManagementSystem.Controllers
             return Ok(BookingEntity);
         }
 
+        // Get by Id (tourists)
+
         [HttpGet("{id}")]
 
-           public async Task<ActionResult<BookingResponseDto>> GetBooking(int id)
+        public async Task<ActionResult<BookingResponseDto>> GetBooking(int id)
         {
             var booking = await dbContext.Bookings
                 .Include(b => b.TripPackage)
@@ -62,7 +71,7 @@ namespace TourManagementSystem.Controllers
             return Ok(booking);
         }
 
-        // GET: api/Booking/TrackStatus
+        // GET: api/Booking/TrackStatus (tourist)
         [HttpGet("TrackStatus")]
         public async Task<ActionResult<IEnumerable<BookingStatusDto>>> TrackBookingStatus([FromQuery] int touristId)
         {
@@ -88,7 +97,57 @@ namespace TourManagementSystem.Controllers
 
             return Ok(bookings);
         }
-    }
-    
 
+        // PUT: api/Booking/{id}/approve
+        [HttpPut("{id}/approve")]
+        public async Task<ActionResult> ApproveBooking(int id)
+        {
+            var booking = await dbContext.Bookings.FindAsync(id);
+            if (booking == null)
+            {
+                dbContext.SaveChanges();
+                return NotFound();
+            }
+
+            booking.Status = "Approved";
+            await dbContext.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // PUT: api/Booking/{id}/reject
+        [HttpPut("{id}/reject")]
+        public async Task<ActionResult> RejectBooking(int id)
+        {
+            var booking = await dbContext.Bookings.FindAsync(id);
+            if (booking == null)
+            {
+                return NotFound();
+            }
+
+
+            booking.Status = "Rejected";
+            await dbContext.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // DELETE: api/Booking/{id}
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> CancelBooking(int id)
+        {
+            var booking = await dbContext.Bookings.FindAsync(id);
+            if (booking == null)
+            {
+                return NotFound();
+            }
+
+            dbContext.Bookings.Remove(booking);
+            await dbContext.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
+    }
 }

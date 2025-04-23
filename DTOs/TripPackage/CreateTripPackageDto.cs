@@ -2,6 +2,7 @@
 {
     public class CreateTripPackageDto
     {
+        public int TripId { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public string TripCategory { get; set; } // e.g., Adventure, Historical
@@ -11,5 +12,8 @@
         public string StartDate { get; set; }
         public string EndDate { get; set; }
         public int TravelAgencyId { get; set; }
+        public int AvailableSeats { get; set; }
+
+
     }
 }
