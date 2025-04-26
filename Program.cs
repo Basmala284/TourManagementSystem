@@ -2,6 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using TourManagementSystem.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace TourManagementSystem
 {
@@ -19,9 +22,21 @@ namespace TourManagementSystem
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<AppDbContext>(options => 
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-           
+            // CORS Policy
+
+            builder.Services.AddCors(options => {
+                options.AddPolicy("AllowReactApp",
+                    policy =>
+                    {
+                        policy.WithOrigins("http://localhost:3000")   //React Host
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                        });
+            });
 
             var app = builder.Build();
+            app.UseCors("AllowReactApp");
+
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -33,6 +48,7 @@ namespace TourManagementSystem
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
+            app.UseAuthentication();
 
 
             app.MapControllers();
