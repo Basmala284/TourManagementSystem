@@ -1,14 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourManagementSystem.Data;
 using TourManagementSystem.DTOs.User;
 using TourManagementSystem.Models.Entities;
+using TourManagementSystem.Models.Enums;
 
 namespace TourManagementSystem.Controllers
-
-
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -21,63 +19,112 @@ namespace TourManagementSystem.Controllers
             this.dbContext = dbContext;
         }
 
-        //Get All users Api For Admin
+        // Get all users
         [HttpGet]
-
-        public IActionResult GetAllUser()
+        public IActionResult GetAllUsers()
         {
-            var Users = dbContext.Users.ToList();
-            return Ok(Users);
+            var users = dbContext.Users
+                .Select(user => new
+                {
+                    user.Id,
+                    user.UserName,
+                    user.Email,
+                    user.PhoneNumber,
+                    user.Role
+                })
+                .ToList();
+
+            return Ok(users);
         }
 
-        // Get user by id Api For Admin
+        // Get user by ID
         [HttpGet("{id}")]
-
         public IActionResult GetUserById(int id)
         {
-            var user = dbContext.Users.Find(id);
+            var user = dbContext.Users
+                .Where(u => u.Id == id)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.UserName,
+                    u.Email,
+                    u.PhoneNumber,
+                    u.Role
+                })
+                .FirstOrDefault();
+
             if (user == null) return NotFound("User not found.");
+
             return Ok(user);
         }
 
-        // update userinfo by id 
+        // Update user
         [HttpPut("{id}")]
-        public IActionResult UpdateUser(int id, UserUpdateDto updatedUser)
+        public IActionResult UpdateUser(string id, UserUpdateDto updatedUser)
         {
             var user = dbContext.Users.Find(id);
             if (user == null) return NotFound("User not found.");
 
-            user.FullName = updatedUser.FullName;
-            user.Password = updatedUser.Password;
-            user.resetPassword = updatedUser.resetPassword;
+            user.UserName = updatedUser.UserName;
             user.Email = updatedUser.Email;
+            user.PhoneNumber = updatedUser.PhoneNumber; // Optional, for example only
 
             dbContext.SaveChanges();
             return Ok("User updated successfully.");
         }
 
-        // POST: api/User/
-        //Add new user to system
+        // Add new user
         [HttpPost]
         public async Task<ActionResult> AddUser(UserRegisterDto userDto)
         {
             var user = new User
             {
-                FullName = userDto.FullName,
+                UserName = userDto.UserName,
                 Email = userDto.Email,
-                Role = userDto.Role,
-                Password = userDto.Password ,
+                PasswordHash = userDto.Password,
                 PhoneNumber = userDto.PhoneNumber,
-                Gender = userDto.Gender,
-               resetPassword = ""
+                Role = Role.Tourist,
+              
             };
 
             dbContext.Users.Add(user);
             await dbContext.SaveChangesAsync();
-            return Ok(user);
 
-            return CreatedAtAction(nameof(GetUserById), new { id = user.UserID }, user);
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
         }
 
+
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        {
+            // Validate input
+            if (changePasswordDto == null)
+            {
+                return BadRequest("Invalid request.");
+            }
+
+            // Find the user by ID
+            var user = await dbContext.Users.FindAsync(changePasswordDto.UserId);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Use UserManager to change the password
+            var userManager = HttpContext.RequestServices.GetService<UserManager<User>>();
+            if (userManager == null)
+            {
+                return StatusCode(500, "UserManager service is not available.");
+            }
+
+            var result = await userManager.ChangePasswordAsync(user, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            return Ok("Password changed successfully.");
+        }
     }
 }

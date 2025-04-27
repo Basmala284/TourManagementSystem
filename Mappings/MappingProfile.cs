@@ -22,6 +22,8 @@ namespace TourManagementSystem.Mappings
             CreateMap<UserRegisterDto, User>();
             CreateMap<UserUpdateDto, User>();
             CreateMap<UserLoginDto, User>();
+            CreateMap<ChangePasswordDto, User>();
+
 
             // 📦 TRIP PACKAGE
             CreateMap<TripPackage, TripPackageResponseDto>().ReverseMap();

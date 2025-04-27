@@ -27,7 +27,7 @@ namespace TourManagementSystem.Controllers
                 .Select(a => new TravelAgencyDto
                 {
                     Id = a.AgencyID,
-                    AgencyName = a.User.FullName, // Name from User table
+                    AgencyName = a.User.UserName, // Name from User table
                     AgencyEmail = a.User.Email, // Email from User table
                     PhoneNumber = a.User.PhoneNumber,
                     IsApproved = a.IsApproved
@@ -52,7 +52,7 @@ namespace TourManagementSystem.Controllers
             }
 
             // Ensure the User's name and email match the DTO values (optional validation)
-            if (user.FullName != agencyDto.AgencyName || user.Email != agencyDto.AgencyEmail)
+            if (user.UserName != agencyDto.AgencyName || user.Email != agencyDto.AgencyEmail)
             {
                 return BadRequest(new { message = "The provided AgencyName or AgencyEmail does not match the User." });
             }
@@ -83,7 +83,7 @@ namespace TourManagementSystem.Controllers
                     Id = a.AgencyID,
                     IsApproved = a.IsApproved,
                     Address = a.Address,
-                    AgencyName = a.User.FullName,
+                    AgencyName = a.User.UserName,
                     AgencyEmail = a.User.Email
                 })
                 .FirstOrDefaultAsync(a => a.Id == id);

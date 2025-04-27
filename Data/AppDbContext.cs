@@ -1,9 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TourManagementSystem.Models.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using System.Numerics;
 
 namespace TourManagementSystem.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options) { }
@@ -24,9 +27,16 @@ namespace TourManagementSystem.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            var roles = new List<IdentityRole>
+            {
+                new IdentityRole { Id = "1", Name = "Admin", NormalizedName = "ADMIN" },
+                new IdentityRole { Id = "2", Name = "Tourist", NormalizedName = "TOURIST" },
+                new IdentityRole { Id="3", Name = "TravelAgency", NormalizedName = "TRAVELAGENCY" }
+            };
 
-            // Prevent cascade delete on Booking → Tourist
-            modelBuilder.Entity<Booking>()
+        
+        // Prevent cascade delete on Booking → Tourist
+        modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Tourist)
                 .WithMany(u => u.Bookings)
                 .HasForeignKey(b => b.TouristId)
