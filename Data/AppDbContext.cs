@@ -27,6 +27,8 @@ namespace TourManagementSystem.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+
             var roles = new List<IdentityRole>
             {
                 new IdentityRole { Id = "1", Name = "Admin", NormalizedName = "ADMIN" },
@@ -34,9 +36,14 @@ namespace TourManagementSystem.Data
                 new IdentityRole { Id="3", Name = "TravelAgency", NormalizedName = "TRAVELAGENCY" }
             };
 
-        
-        // Prevent cascade delete on Booking → Tourist
-        modelBuilder.Entity<Booking>()
+
+            // Map Identity's "Id" to "UserID"
+            modelBuilder.Entity<User>()
+                .Property(u => u.Id)
+                .HasColumnName("UserID");
+
+            // Prevent cascade delete on Booking → Tourist
+            modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Tourist)
                 .WithMany(u => u.Bookings)
                 .HasForeignKey(b => b.TouristId)
@@ -54,7 +61,8 @@ namespace TourManagementSystem.Data
             modelBuilder.Entity<TravelAgency>()
                .HasOne(ta => ta.User)               // A TravelAgency has one User
                .WithMany(u => u.TravelAgencies)     // A User can have many TravelAgencies
-               .HasForeignKey(ta => ta.UserID);     // Foreign Key in TravelAgency table
+               .HasForeignKey(ta => ta.UserID)    // Foreign Key in TravelAgency table
+               .OnDelete(DeleteBehavior.Cascade);
 
             // TravelAgency -> TripPackage (1-to-M)
             modelBuilder.Entity<TripPackage>()
@@ -90,7 +98,14 @@ namespace TourManagementSystem.Data
                 .HasOne(tp => tp.TripCategory)
                 .WithMany(tc => tc.TripPackages)
                 .HasForeignKey(tp => tp.TripCategoryId);
+
+
+
+
+
         }
+
+
 
 
     }

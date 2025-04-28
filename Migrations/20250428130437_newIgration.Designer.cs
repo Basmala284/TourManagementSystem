@@ -12,8 +12,8 @@ using TourManagementSystem.Data;
 namespace TourManagementSystem.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250426224959_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20250428130437_newIgration")]
+    partial class newIgration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -395,7 +395,8 @@ namespace TourManagementSystem.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("UserID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
@@ -444,9 +445,6 @@ namespace TourManagementSystem.Migrations
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
-
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
 
                     b.Property<string>("UserName")
                         .IsRequired()

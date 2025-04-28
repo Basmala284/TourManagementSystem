@@ -76,7 +76,7 @@ namespace TourManagementSystem.Controllers
         public async Task<ActionResult<IEnumerable<BookingStatusDto>>> TrackBookingStatus([FromQuery] int touristId)
         {
             // Validate touristId
-            var touristExists = await dbContext.Users.AnyAsync(t => t.UserID == touristId);
+            var touristExists = await dbContext.Users.AnyAsync(t => t.Id == touristId);
             if (!touristExists)
             {
                 return NotFound(new { message = "Tourist not found" });

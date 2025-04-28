@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourManagementSystem.Data;
@@ -19,8 +20,8 @@ namespace TourManagementSystem.Controllers
             this.dbContext = dbContext;
         }
 
-        // Get all users
-        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        [HttpGet]        // Get all users For Admin only
         public IActionResult GetAllUsers()
         {
             var users = dbContext.Users
@@ -35,9 +36,10 @@ namespace TourManagementSystem.Controllers
                 .ToList();
 
             return Ok(users);
-        }
-
+        } 
+        
         // Get user by ID
+        [Authorize(Roles = "Admin,Tourist")]
         [HttpGet("{id}")]
         public IActionResult GetUserById(int id)
         {
@@ -59,6 +61,7 @@ namespace TourManagementSystem.Controllers
         }
 
         // Update user
+        [Authorize(Roles = "Admin,Tourist")]
         [HttpPut("{id}")]
         public IActionResult UpdateUser(string id, UserUpdateDto updatedUser)
         {

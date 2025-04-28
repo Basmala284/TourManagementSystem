@@ -21,11 +21,14 @@ namespace TourManagementSystem.Controllers
         private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly TokenService _Token;
+        private readonly SignInManager<User> _signInManager;
 
-        public AuthenticationController(UserManager<User> userManager, TokenService Token, RoleManager<IdentityRole<int>> roleManager, IConfiguration configuration)
+
+        public AuthenticationController(UserManager<User> userManager, TokenService Token, RoleManager<IdentityRole<int>> roleManager, IConfiguration configuration, SignInManager<User>? signInManager)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _signInManager = signInManager;
             _Token = Token;
             _configuration = configuration;
         }
@@ -126,5 +129,17 @@ namespace TourManagementSystem.Controllers
 
             return Unauthorized();
         }
+
+        //[Authorize]
+        //[HttpPost("LogOut")]
+        //public async Task<IActionResult> LogOut()
+        //{
+        //    await _signInManager.SignOutAsync();
+        //    var user = await _userManager.GetUserAsync(User);
+        //    if (user == null) return BadRequest("not found");
+        //    await _userManager.UpdateSecurityStampAsync(user);
+        //    return Ok("log Out succesfully");
+
+        //}
     }
 }

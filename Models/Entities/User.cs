@@ -8,10 +8,14 @@ namespace TourManagementSystem.Models.Entities
     [Table("Users")]
     public class User : IdentityUser<int>
     {
+        // Map Identity's "Id" to "UserID"
         [Key]
-        public int UserID { get; set; }
+        [Column("UserID")] // the column is named "UserID" in the database
+        public override int Id { get; set; } // This will act as UserID
+
         public Role Role { get; set; }
         public string UserName { get; set; }
+
         //public string Email { get; set; }
         //public string Password { get; set; }
         // public string resetPassword { get; set; }
