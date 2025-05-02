@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using TourManagementSystem.Models.Entities;
 using TourManagementSystem.Services;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace TourManagementSystem
 {
@@ -58,66 +59,34 @@ namespace TourManagementSystem
         }
     });
             });
-            builder.Services.AddDbContext<AppDbContext>(options => 
+            builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-            builder.Services.AddAuthorization();
-
-            // Configure JWT Authentication
-            var key = builder.Configuration["JwtSettings:Key"];
 
             builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
             {
-                options.Password.RequireDigit = false;
-                options.Password.RequiredLength = 6;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = false;
-                options.Password.RequireLowercase = false;
                 options.User.RequireUniqueEmail = true;
             })
-            .AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders();
+ .AddEntityFrameworkStores<AppDbContext>()
+ .AddDefaultTokenProviders();
 
-            builder.Services.AddAuthentication(options =>
+
+            builder.Services.AddJwt(builder.Configuration);
+
+            builder.Services.AddCors(options =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = builder.Configuration["JWT:Issuer"],
-                    ValidateAudience = true,
-                    ValidAudience = builder.Configuration["JWT:Audience"],
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JWT:SigningKey"])),
-                };
-            });
-
-
-
-
-            // CORS Policy
-
-            builder.Services.AddCors(options => {
                 options.AddPolicy("AllowReactApp",
                     policy =>
                     {
                         policy.WithOrigins("http://localhost:3000")   //React Host
                         .AllowAnyHeader()
                         .AllowAnyMethod();
-                        });
+                    });
             });
 
             var app = builder.Build();
-           
+
             app.UseCors("AllowReactApp");
 
-            // Seed roles
             using (var scope = app.Services.CreateScope())
             {
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
@@ -134,7 +103,6 @@ namespace TourManagementSystem
             }
 
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -148,7 +116,7 @@ namespace TourManagementSystem
 
 
             app.UseAuthorization();
-            
+
 
             app.MapControllers();
 

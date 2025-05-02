@@ -9,29 +9,20 @@ using TourManagementSystem.Models.Entities;
 using TourManagementSystem.Models.Enums;
 using TourManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
+using TourManagementSystem.DTOs;
 
 
 namespace TourManagementSystem.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthenticationController : ControllerBase
+    public class AuthenticationController(UserManager<User> userManager, 
+        RoleManager<IdentityRole<int>> roleManager, 
+        IConfiguration configuration, 
+        JwtService jwtService,
+        SignInManager<User>? signInManager) : ControllerBase
     {
-        private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole<int>> _roleManager;
-        private readonly IConfiguration _configuration;
-        private readonly TokenService _Token;
-        private readonly SignInManager<User> _signInManager;
-
-
-        public AuthenticationController(UserManager<User> userManager, TokenService Token, RoleManager<IdentityRole<int>> roleManager, IConfiguration configuration, SignInManager<User>? signInManager)
-        {
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _signInManager = signInManager;
-            _Token = Token;
-            _configuration = configuration;
-        }
+        private readonly SignInManager<User> _signInManager = signInManager;
 
         [AllowAnonymous]
         [HttpPost("register")]
@@ -42,17 +33,14 @@ namespace TourManagementSystem.Controllers
                 return BadRequest("User is null");
             }
 
-            // Check if the user already exists
-            var existingUser = await _userManager.FindByEmailAsync(userRegister.Email);
+            var existingUser = await userManager.FindByEmailAsync(userRegister.Email);
             if (existingUser != null)
             {
                 return BadRequest("User already exists");
             }
 
-            // Validate and parse the role
             Role userRole;
 
-            // If Role is a string
             if (userRegister.Role is string roleString)
             {
                 if (!Enum.TryParse(roleString, true, out userRole) || !Enum.IsDefined(typeof(Role), userRole))
@@ -66,7 +54,6 @@ namespace TourManagementSystem.Controllers
                 return BadRequest("Invalid role format.");
             }
 
-            // Create a new user
             var newUser = new User
             {
                 UserName = userRegister.UserName,
@@ -75,15 +62,13 @@ namespace TourManagementSystem.Controllers
                 Role = userRole
             };
 
-            // Create the user in the system
-            var result = await _userManager.CreateAsync(newUser, userRegister.Password);
+            var result = await userManager.CreateAsync(newUser, userRegister.Password);
             if (!result.Succeeded)
             {
                 return BadRequest(result.Errors);
             }
 
-            // Add the user to the role in ASP.NET Identity
-            await _userManager.AddToRoleAsync(newUser, userRole.ToString());
+            await userManager.AddToRoleAsync(newUser, userRole.ToString());
 
             return Ok($"User registered successfully with role: {userRole}");
         }
@@ -97,34 +82,21 @@ namespace TourManagementSystem.Controllers
                 return BadRequest("User is null");
             }
 
-            var user = await _userManager.FindByEmailAsync(userLogin.Email);
+            var user = await userManager.FindByEmailAsync(userLogin.Email);
             if (user == null)
             {
                 return BadRequest("User not found");
             }
 
-            if (await _userManager.CheckPasswordAsync(user, userLogin.Password))
+            if (await userManager.CheckPasswordAsync(user, userLogin.Password))
             {
-                var userRole = user.Role.ToString(); // Get the role as a string
+                var roles = await userManager.GetRolesAsync(user);
 
-                var authClaims = new List<Claim>
-                {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.UserName!),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(ClaimTypes.Role, userRole)
-                };
+                var authResponse = await jwtService.GenerateJWTokenAsync(user.Id.ToString());
 
-                var token = new JwtSecurityToken(
-                    issuer: _configuration["JwtSettings:Issuer"],
-                    audience: _configuration["JwtSettings:Audience"],
-                    expires: DateTime.Now.AddMinutes(double.Parse(_configuration["JwtSettings:ExpiresInMinutes"])),
-                    claims: authClaims,
-                    signingCredentials: new SigningCredentials(
-                        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"])),
-                        SecurityAlgorithms.HmacSha256)
-                );
+                authResponse.Roles = roles;
 
-                return Ok(new { Token = new JwtSecurityTokenHandler().WriteToken(token) });
+                return Ok(authResponse);
             }
 
             return Unauthorized();

@@ -14,8 +14,7 @@ namespace TourManagementSystem.Controllers
     {
         private readonly AppDbContext dbContext;
 
-       
-
+      
         public TripPackageController(AppDbContext dbContext)
         {
             this.dbContext = dbContext;

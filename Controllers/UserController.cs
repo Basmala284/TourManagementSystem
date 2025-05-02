@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourManagementSystem.Data;
 using TourManagementSystem.DTOs.User;
+using TourManagementSystem.DTOs.Users;
 using TourManagementSystem.Models.Entities;
 using TourManagementSystem.Models.Enums;
 
@@ -11,56 +12,29 @@ namespace TourManagementSystem.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : ControllerBase
+    public class UserController(AppDbContext dbContext) : ControllerBase
     {
-        private readonly AppDbContext dbContext;
-
-        public UserController(AppDbContext dbContext)
-        {
-            this.dbContext = dbContext;
-        }
-
         [Authorize(Roles = "Admin")]
-        [HttpGet]        // Get all users For Admin only
-        public IActionResult GetAllUsers()
+        [HttpGet]        
+        public async Task<IActionResult> GetAllUsers()
         {
-            var users = dbContext.Users
-                .Select(user => new
-                {
-                    user.Id,
-                    user.UserName,
-                    user.Email,
-                    user.PhoneNumber,
-                    user.Role
-                })
-                .ToList();
-
+            var users = await dbContext.Users.AsNoTracking().Select(u => new UserResponseDto(u)).ToListAsync();
             return Ok(users);
         } 
         
-        // Get user by ID
         [Authorize(Roles = "Admin,Tourist")]
         [HttpGet("{id}")]
-        public IActionResult GetUserById(int id)
+        public async Task<IActionResult> GetUserById(int id)
         {
-            var user = dbContext.Users
-                .Where(u => u.Id == id)
-                .Select(u => new
-                {
-                    u.Id,
-                    u.UserName,
-                    u.Email,
-                    u.PhoneNumber,
-                    u.Role
-                })
-                .FirstOrDefault();
+            var user = await dbContext.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null) return NotFound("User not found.");
 
-            return Ok(user);
+
+            return Ok(new UserResponseDto(user));
         }
 
-        // Update user
         [Authorize(Roles = "Admin,Tourist")]
         [HttpPut("{id}")]
         public IActionResult UpdateUser(string id, UserUpdateDto updatedUser)
@@ -70,13 +44,12 @@ namespace TourManagementSystem.Controllers
 
             user.UserName = updatedUser.UserName;
             user.Email = updatedUser.Email;
-            user.PhoneNumber = updatedUser.PhoneNumber; // Optional, for example only
+            user.PhoneNumber = updatedUser.PhoneNumber; 
 
             dbContext.SaveChanges();
             return Ok("User updated successfully.");
         }
 
-        // Add new user
         [HttpPost]
         public async Task<ActionResult> AddUser(UserRegisterDto userDto)
         {
@@ -87,7 +60,6 @@ namespace TourManagementSystem.Controllers
                 PasswordHash = userDto.Password,
                 PhoneNumber = userDto.PhoneNumber,
                 Role = Role.Tourist,
-              
             };
 
             dbContext.Users.Add(user);
@@ -100,20 +72,17 @@ namespace TourManagementSystem.Controllers
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
         {
-            // Validate input
             if (changePasswordDto == null)
             {
                 return BadRequest("Invalid request.");
             }
 
-            // Find the user by ID
             var user = await dbContext.Users.FindAsync(changePasswordDto.UserId);
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            // Use UserManager to change the password
             var userManager = HttpContext.RequestServices.GetService<UserManager<User>>();
             if (userManager == null)
             {
