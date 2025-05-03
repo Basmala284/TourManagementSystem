@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourManagementSystem.Data;
@@ -21,17 +23,45 @@ namespace TourManagementSystem.Controllers
 
         // GetAllBooking  //get all booking for admin api
 
+        [Authorize(Roles = "Admin,TravelAgency")]     // GetAllBooking (Admin or TravelAgency)
         [HttpGet]
         public IActionResult GetAllBooking()
         {
-            var AllBooking = dbContext.Bookings.ToList();
-            return Ok(AllBooking);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (userRole == "Admin")
+            {
+                // Admin can see all bookings
+                var allBookings = dbContext.Bookings
+                    .Include(b => b.TripPackage)
+                    .Include(b => b.Tourist)
+                    .ToList();
+                return Ok(allBookings);
+            }
+            else if (userRole == "TravelAgency")
+            {
+                // Travel Agency can only see bookings for their own packages
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                var agencyPackages = dbContext.TripPackages
+                    .Where(tp => tp.TravelAgencyId == userId)
+                    .Select(tp => tp.Id)
+                    .ToList();
+
+                var agencyBookings = dbContext.Bookings
+                    .Where(b => agencyPackages.Contains(b.TourPackageId))
+                    .Include(b => b.TripPackage)
+                    .Include(b => b.Tourist)
+                    .ToList();
+                return Ok(agencyBookings);
+            }
+
+            return Forbid();
         }
 
 
         //Add Booking (tourist)
-
-        [HttpPost]
+        [Authorize(Roles = "Tourist")]
+        [HttpPost]   
         public IActionResult CreateBooking(CreateBookingDto createBookingdto)
         {
             var BookingEntity = new Booking()
@@ -55,9 +85,8 @@ namespace TourManagementSystem.Controllers
         }
 
         // Get by Id (tourists)
-
+        [Authorize(Roles = "Tourist")]
         [HttpGet("{id}")]
-
         public async Task<ActionResult<BookingResponseDto>> GetBooking(int id)
         {
             var booking = await dbContext.Bookings
@@ -72,6 +101,7 @@ namespace TourManagementSystem.Controllers
         }
 
         // GET: api/Booking/TrackStatus (tourist)
+        [Authorize(Roles = "Tourist")]
         [HttpGet("TrackStatus")]
         public async Task<ActionResult<IEnumerable<BookingStatusDto>>> TrackBookingStatus([FromQuery] int touristId)
         {
@@ -98,7 +128,7 @@ namespace TourManagementSystem.Controllers
             return Ok(bookings);
         }
 
-        // PUT: api/Booking/{id}/approve
+        [Authorize(Roles = "TravelAgency")] // PUT: api/Booking/{id}/approve
         [HttpPut("{id}/approve")]
         public async Task<ActionResult> ApproveBooking(int id)
         {
@@ -115,8 +145,9 @@ namespace TourManagementSystem.Controllers
             return NoContent();
         }
 
-        // PUT: api/Booking/{id}/reject
+        [Authorize(Roles = "TravelAgency")]    // PUT: api/Booking/{id}/reject
         [HttpPut("{id}/reject")]
+        
         public async Task<ActionResult> RejectBooking(int id)
         {
             var booking = await dbContext.Bookings.FindAsync(id);
@@ -132,17 +163,29 @@ namespace TourManagementSystem.Controllers
             return NoContent();
         }
 
-        // DELETE: api/Booking/{id}
+        // Cancel Booking (Tourist or Admin)
+        [Authorize(Roles = "Tourist,Admin")]
         [HttpDelete("{id}")]
-        public async Task<ActionResult> CancelBooking(int id)
+        public async Task<IActionResult> CancelBooking(int id)
         {
-            var booking = await dbContext.Bookings.FindAsync(id);
+            var booking = await dbContext.Bookings.Include(b => b.Tourist).FirstOrDefaultAsync(b => b.Id == id);
             if (booking == null)
             {
                 return NotFound();
             }
 
-            dbContext.Bookings.Remove(booking);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            if (userRole == "Tourist" && booking.TouristId != userId)
+            {
+                // Tourist can only cancel their own bookings
+                return Unauthorized(new { message = "You are not authorized to cancel this booking." });
+            }
+
+            // Admin or authorized Tourist can cancel the booking
+            booking.Status = "Canceled";
+            dbContext.Bookings.Update(booking);
             await dbContext.SaveChangesAsync();
 
             return NoContent();

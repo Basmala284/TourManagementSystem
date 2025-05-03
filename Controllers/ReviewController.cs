@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TourManagementSystem.Data;
 using TourManagementSystem.DTOs.Review;
 using TourManagementSystem.Models.Entities;
@@ -17,72 +19,91 @@ namespace TourManagementSystem.Controllers
         {
             this.dbContext = dbContext;
         }
-        // GET: api/Review
+
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult GetAllReviews()
         {
-            var reviews = dbContext.Reviews.ToList();
+            var reviews = dbContext.Reviews
+                .Select(r => new ReviewDto
+                {
+                    Id = r.Id,
+                    TourPackageTitle = r.TourPackageTitle,
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    ReviewDate = r.ReviewDate
+                })
+                .ToList();
+
+            if (reviews == null || !reviews.Any())
+            {
+                return NotFound(new { message = "No reviews found." });
+            }
+
             return Ok(reviews);
         }
-
-        // Add review (tourist)
+        [Authorize(Roles = "Tourist")] // Add a review (Tourist only)
         [HttpPost]
         public IActionResult AddReview(CreateReviewDto request)
         {
-            // Fetch the Booking record to ensure it exists and fetch related data
+            // Ensure the logged-in user is the same as the Tourist in the Booking
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
             var booking = dbContext.Bookings
-                .Include(b => b.Tourist) // Ensure the Tourist navigation property is loaded
-                .Include(b => b.TripPackage) // Ensure the TripPackage navigation property is loaded
+                .Include(b => b.Tourist) 
+                .Include(b => b.TripPackage) 
                 .FirstOrDefault(b => b.Id == request.BookingID);
 
             if (booking == null)
             {
-                return NotFound("Booking not found for the given BookingId.");
+                return NotFound(new { message = "Booking not found for the given BookingId." });
+            }
+
+            if (booking.TouristId != userId)
+            {
+                return Unauthorized(new { message = "You are not authorized to add a review for this booking." });
             }
 
             // Check if a review already exists for this booking
             if (booking.Review != null)
             {
-                return BadRequest("A review has already been submitted for this booking.");
+                return BadRequest(new { message = "A review has already been submitted for this booking." });
             }
 
-            // Create the Review object
+
             var review = new Review()
             {
-                BookingID = booking.Id, // Associate the review with the booking
-               // TouristId = booking.TouristId, // Get the UserId from the Booking
-                TourPackageId = booking.TourPackageId, // Get the TourPackageId from the Booking
-                TourPackageTitle = booking.TripPackage.Title, // Get the Title from the TripPackage
+                BookingID = booking.Id, 
+                TourPackageId = booking.TourPackageId, 
+                TourPackageTitle = booking.TripPackage.Title, 
                 Rating = request.Rating,
                 Comment = request.Comment,
-                ReviewDate = DateTime.UtcNow // Set the review date to the current time
+                ReviewDate = DateTime.UtcNow 
             };
 
-            // Add the review to the context
             dbContext.Reviews.Add(review);
 
-            // Update the Booking entity to associate it with the Review
             booking.Review = review;
-
-            // Save changes to the database
             dbContext.SaveChanges();
 
-            return Ok(review);
+            return Ok(new { message = "Review added successfully.", review });
         }
-        // DELETE: api/Review/{id}
+
+        [Authorize(Roles = "Admin")]// Delete a review (Admin-only)
         [HttpDelete("{id}")]
+        
         public async Task<ActionResult> DeleteReview(int id)
         {
             var review = await dbContext.Reviews.FindAsync(id);
             if (review == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Review not found." });
             }
 
             dbContext.Reviews.Remove(review);
             await dbContext.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new { message = "Review deleted successfully." });
         }
     }
 }

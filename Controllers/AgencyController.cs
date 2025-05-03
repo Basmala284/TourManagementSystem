@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourManagementSystem.Data;
@@ -17,7 +18,7 @@ namespace TourManagementSystem.Controllers
         {
             this.dbContext = dbContext;
         }
-        // GET: api/TravelAgency
+        [Authorize(Roles = "Admin")]// GET: api/Agency (Admin-only)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TravelAgencyDto>>> GetTravelAgencies()
         {
@@ -31,16 +32,13 @@ namespace TourManagementSystem.Controllers
                     AgencyEmail = a.User.Email, // Email from User table
                     PhoneNumber = a.User.PhoneNumber,
                     IsApproved = a.IsApproved
-
                 })
                 .ToListAsync();
 
             return Ok(agencies);
         }
 
-
-
-        // POST: api/Agency
+        [Authorize(Roles = "Admin")] // POST: api/Agency (Admin-only)
         [HttpPost]
         public async Task<ActionResult> AddAgency(CreateAgencyDto agencyDto)
         {
@@ -62,7 +60,6 @@ namespace TourManagementSystem.Controllers
             {
                 UserID = agencyDto.UserID,
                 IsApproved = false,
-
             };
 
             dbContext.TravelAgencies.Add(agency);
@@ -71,7 +68,7 @@ namespace TourManagementSystem.Controllers
             return CreatedAtAction(nameof(GetAgencyById), new { id = agency.AgencyID }, agency);
         }
 
-        // GET: api/Agency/{id}
+        [Authorize(Roles = "Admin")] // GET: api/Agency/{id} (Admin-only)
         [HttpGet("{id}")]
         public async Task<ActionResult<TravelAgencyDto>> GetAgencyById(int id)
         {
@@ -95,7 +92,8 @@ namespace TourManagementSystem.Controllers
 
             return Ok(agency);
         }
-        // PUT: api/TravelAgency/{id}/approve
+
+        [Authorize(Roles = "Admin")] // PUT: api/Agency/{id}/approve (Admin-only)
         [HttpPut("{id}/approve")]
         public async Task<ActionResult> ApproveTravelAgency(int id)
         {
@@ -111,7 +109,7 @@ namespace TourManagementSystem.Controllers
             return NoContent(); // 204 No Content
         }
 
-        // PUT: api/TravelAgency/{id}/reject
+        [Authorize(Roles = "Admin")]// PUT: api/Agency/{id}/reject (Admin-only)
         [HttpPut("{id}/reject")]
         public async Task<ActionResult> RejectTravelAgency(int id)
         {
@@ -127,7 +125,7 @@ namespace TourManagementSystem.Controllers
             return NoContent(); // 204 No Content
         }
 
-        // DELETE: api/TravelAgency/{id}
+        [Authorize(Roles = "Admin")]// DELETE: api/Agency/{id} (Admin-only)
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteTravelAgency(int id)
         {

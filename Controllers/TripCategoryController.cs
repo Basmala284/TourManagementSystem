@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourManagementSystem.Data;
@@ -18,56 +19,68 @@ namespace TourManagementSystem.Controllers
             this.dbContext = dbContext;
         }
 
+        [Authorize(Roles = "Admin")]// Get all categories (Admin-only)
         [HttpGet]
+        
         public IActionResult GetCategories()
         {
             var Categories = dbContext.TripCategories.ToList();
-            if (Categories == null)
+            if (Categories == null || !Categories.Any())
             {
-                return NotFound();
+                return NotFound(new { message = "No categories found." });
             }
             return Ok(Categories);
         }
 
-        [HttpGet("{int id}")]
-        public IActionResult CategorybyId(int id) {
-            var Categoryid = dbContext.TripCategories.FirstOrDefault(c => c.Id == id);
-            if (Categoryid == null)
+        [Authorize(Roles = "Admin")]    // Get a category by ID (Admin-only)
+        [HttpGet("{id}")]
+        
+        public IActionResult CategoryById(int id)
+        {
+            var category = dbContext.TripCategories.FirstOrDefault(c => c.Id == id);
+            if (category == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Category not found." });
             }
-            return Ok(Categoryid);
-
-
-        }
-
-        [HttpPut("{int id}")]
-        public IActionResult UpdateCategory(int id,updateCategoryDto dto) {
-            var category = dbContext.TripCategories.Find(id);
-            if (category == null) return NotFound(" not found.");
-           category.Name = dto.Name;
-           category.Description = dto.Description;
-            dbContext.SaveChanges();
             return Ok(category);
-
         }
 
-
-        [HttpDelete("{int id}")]
-        public IActionResult DeleteCategoryById(int id) {
-
-            var _id = dbContext.TripCategories.Find(id);
-            if (_id == null)
+        // Update a category (Admin-only)
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}")]    
+        public IActionResult UpdateCategory(int id, updateCategoryDto dto)
+        {
+            var category = dbContext.TripCategories.Find(id);
+            if (category == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Category not found." });
             }
-            dbContext.TripCategories.Remove(_id);
+
+            category.Name = dto.Name;
+            category.Description = dto.Description;
             dbContext.SaveChanges();
-            return Ok(_id);
+            return Ok(new { message = "Category updated successfully.", category });
         }
 
+        [Authorize(Roles = "Admin")] // Delete a category by ID (Admin-only)
+        [HttpDelete("{id}")]
+       
+        public IActionResult DeleteCategoryById(int id)
+        {
+            var category = dbContext.TripCategories.Find(id);
+            if (category == null)
+            {
+                return NotFound(new { message = "Category not found." });
+            }
 
+            dbContext.TripCategories.Remove(category);
+            dbContext.SaveChanges();
+            return Ok(new { message = "Category deleted successfully.", category });
+        }
+
+        [Authorize(Roles = "Admin")]   // Add a new category (Admin-only)
         [HttpPost]
+        
         public IActionResult AddCategories(AddTripCategoryDto dto)
         {
             var category = new TripCategory
@@ -78,8 +91,7 @@ namespace TourManagementSystem.Controllers
 
             dbContext.TripCategories.Add(category);
             dbContext.SaveChanges();
-            return Ok(category);
-
+            return Ok(new { message = "Category added successfully.", category });
         }
     }
 }

@@ -19,11 +19,12 @@ namespace TourManagementSystem.Mappings
         public MappingProfile()
         {
             // 🧍 USER
-            CreateMap<User, UserResponseDto>().ReverseMap();
+          
             CreateMap<UserRegisterDto, User>();
             CreateMap<UserUpdateDto, User>();
             CreateMap<UserLoginDto, User>();
             CreateMap<ChangePasswordDto, User>();
+            CreateMap<UserResponseDto, User>();
 
 
             // 📦 TRIP PACKAGE
