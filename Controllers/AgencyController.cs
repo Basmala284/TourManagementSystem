@@ -49,7 +49,6 @@ namespace TourManagementSystem.Controllers
                 return BadRequest(new { message = "User not found." });
             }
 
-            // Ensure the User's name and email match the DTO values (optional validation)
             if (user.UserName != agencyDto.AgencyName || user.Email != agencyDto.AgencyEmail)
             {
                 return BadRequest(new { message = "The provided AgencyName or AgencyEmail does not match the User." });

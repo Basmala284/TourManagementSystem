@@ -25,11 +25,10 @@ namespace TourManagementSystem
 
             // Add services to the container.
 
-            builder.Services.AddControllers().AddNewtonsoftJson(options =>
+            builder.Services.AddControllers().AddJsonOptions(options =>
             {
-                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-            });
-
+                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+            }); 
             builder.Services.AddScoped<TokenService>();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
