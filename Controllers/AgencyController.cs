@@ -59,7 +59,8 @@ namespace TourManagementSystem.Controllers
             var agency = new TravelAgency
             {
                 UserID = agencyDto.UserID,
-                IsApproved = false,
+                IsApproved = true,
+                Address = agencyDto.Address
             };
 
             dbContext.TravelAgencies.Add(agency);

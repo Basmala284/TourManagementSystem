@@ -11,7 +11,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using TourManagementSystem.Models.Entities;
 using TourManagementSystem.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+
 
 namespace TourManagementSystem
 {
