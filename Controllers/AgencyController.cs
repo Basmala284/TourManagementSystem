@@ -18,6 +18,40 @@ namespace TourManagementSystem.Controllers
         {
             this.dbContext = dbContext;
         }
+
+        [Authorize(Roles = "Agency")]      // GET: api/Agency/Dashboard Api
+        [HttpGet("summary/{agencyId}")]
+        public async Task<IActionResult> GetAgencyDashboardSummary(int agencyId)
+        {
+            // Validate if the agency exists
+            var agencyExists = await dbContext.TravelAgencies.AnyAsync(a => a.AgencyID == agencyId);
+            if (!agencyExists)
+            {
+                return NotFound(new { message = "Agency not found." });
+            }
+
+            // Calculate the summary statistics
+            var totalTours = await dbContext.TripPackages.CountAsync(t => t.TravelAgencyId == agencyId);
+            var newBookings = await dbContext.Bookings
+                .CountAsync(b => b.TripPackage.TravelAgencyId == agencyId && b.BookingDate >= DateTime.UtcNow.AddDays(-30));
+            var pendingBookings = await dbContext.Bookings
+                .CountAsync(b => b.TripPackage.TravelAgencyId == agencyId && b.Status == "Pending");
+            var messages = await dbContext.Messages.CountAsync(m => m.ReceiverId == agencyId);
+            var availableTours = await dbContext.TripPackages.CountAsync(t => t.TravelAgencyId == agencyId);
+
+            // Return the summary as a JSON object
+            var summary = new
+            {
+                TotalTours = totalTours,
+                NewBookings = newBookings,
+                PendingBookings = pendingBookings,
+                Messages = messages,
+                AvailableTours = availableTours
+            };
+
+            return Ok(summary);
+        }
+
         [Authorize(Roles = "Admin")]// GET: api/Agency (Admin-only)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TravelAgencyDto>>> GetTravelAgencies()
