@@ -1,8 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TourManagementSystem.Models.Entities;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using System.Numerics;
+using Microsoft.EntityFrameworkCore;
+using TourManagementSystem.Models.Entities;
 
 namespace TourManagementSystem.Data
 {
@@ -10,11 +9,6 @@ namespace TourManagementSystem.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options) { }
-
-        public AppDbContext()
-        {
-            
-        }
 
         public DbSet<User> Users { get; set; }
         public DbSet<TripPackage> TripPackages { get; set; }
@@ -24,18 +18,19 @@ namespace TourManagementSystem.Data
         public DbSet<Complaint> Complaints { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<TripCategory> TripCategories { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-
-            var roles = new List<IdentityRole>
+            // إضافة الأدوار الثابتة
+            var roles = new List<IdentityRole<int>>
             {
-                new IdentityRole { Id = "1", Name = "Admin", NormalizedName = "ADMIN" },
-                new IdentityRole { Id = "2", Name = "Tourist", NormalizedName = "TOURIST" },
-                new IdentityRole { Id="3", Name = "TravelAgency", NormalizedName = "TRAVELAGENCY" }
+                new IdentityRole<int> { Id = 1, Name = "Admin", NormalizedName = "ADMIN" },
+                new IdentityRole<int> { Id = 2, Name = "Tourist", NormalizedName = "TOURIST" },
+                new IdentityRole<int> { Id = 3, Name = "TravelAgency", NormalizedName = "TRAVELAGENCY" }
             };
-
+            modelBuilder.Entity<IdentityRole<int>>().HasData(roles);
 
             // Map Identity's "Id" to "UserID"
             modelBuilder.Entity<User>()
@@ -47,7 +42,7 @@ namespace TourManagementSystem.Data
                 .HasOne(b => b.Tourist)
                 .WithMany(u => u.Bookings)
                 .HasForeignKey(b => b.TouristId)
-                .OnDelete(DeleteBehavior.Restrict); // 👈 this disables cascade delete
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Optional: prevent review → booking cascade loops too
             modelBuilder.Entity<Review>()
@@ -56,17 +51,16 @@ namespace TourManagementSystem.Data
                 .HasForeignKey<Review>(r => r.Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
-
             // User -> TravelAgency (1-to-M)
             modelBuilder.Entity<TravelAgency>()
-               .HasOne(ta => ta.User)               // A TravelAgency has one User
-               .WithMany(u => u.TravelAgencies)     // A User can have many TravelAgencies
-               .HasForeignKey(ta => ta.UserID)    // Foreign Key in TravelAgency table
+               .HasOne(ta => ta.User)
+               .WithMany(u => u.TravelAgencies)
+               .HasForeignKey(ta => ta.UserID)
                .OnDelete(DeleteBehavior.Cascade);
 
             // TravelAgency -> TripPackage (1-to-M)
             modelBuilder.Entity<TripPackage>()
-                .HasOne(tp => tp.TravelAgency)      // one Agency Has many tripPackages
+                .HasOne(tp => tp.TravelAgency)
                 .WithMany(ta => ta.TripPackages)
                 .HasForeignKey(tp => tp.TravelAgencyId);
 
@@ -81,6 +75,7 @@ namespace TourManagementSystem.Data
                 .HasOne(b => b.Tourist)
                 .WithMany(u => u.Bookings)
                 .HasForeignKey(b => b.TouristId);
+
             // TripPackage -> Review (1-to-M)
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.TripPackage)
@@ -98,15 +93,6 @@ namespace TourManagementSystem.Data
                 .HasOne(tp => tp.TripCategory)
                 .WithMany(tc => tc.TripPackages)
                 .HasForeignKey(tp => tp.TripCategoryId);
-
-
-
-
-
         }
-
-
-
-
     }
 }

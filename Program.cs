@@ -1,5 +1,4 @@
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using TourManagementSystem.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -11,9 +10,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using TourManagementSystem.Models.Entities;
 using TourManagementSystem.Services;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
+using TourManagementSystem.Models.Enums;
 
 namespace TourManagementSystem
 {
@@ -23,16 +22,17 @@ namespace TourManagementSystem
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            builder.WebHost.UseUrls("http://localhost:5050", "https://localhost:7050");
 
-            builder.Services.AddControllers().AddNewtonsoftJson(options =>
+            // Add services to the container.
+            builder.Services.AddControllers().AddJsonOptions(options =>
             {
-                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
             });
 
             builder.Services.AddScoped<TokenService>();
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            // إعداد Swagger
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(option =>
             {
@@ -47,30 +47,34 @@ namespace TourManagementSystem
                     Scheme = "Bearer"
                 });
                 option.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
                 {
-                    Type=ReferenceType.SecurityScheme,
-                    Id="Bearer"
-                }
-            },
-            new string[]{}
-        }
-    });
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        new string[]{}
+                    }
+                });
             });
+
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
             {
                 options.User.RequireUniqueEmail = true;
+                options.Password.RequireDigit = true;
+                options.Password.RequiredLength = 8;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequireUppercase = true;
             })
- .AddEntityFrameworkStores<AppDbContext>()
- .AddDefaultTokenProviders();
-
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
 
             builder.Services.AddJwt(builder.Configuration);
 
@@ -79,9 +83,9 @@ namespace TourManagementSystem
                 options.AddPolicy("AllowReactApp",
                     policy =>
                     {
-                        policy.WithOrigins("http://localhost:3000")   //React Host
-                        .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        policy.WithOrigins("http://localhost:3000")
+                              .AllowAnyHeader()
+                              .AllowAnyMethod();
                     });
             });
 
@@ -89,37 +93,62 @@ namespace TourManagementSystem
 
             app.UseCors("AllowReactApp");
 
+            // إنشاء الأدوار ومستخدم الأدمن تلقائيًا
             using (var scope = app.Services.CreateScope())
             {
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
-
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
                 var roles = new[] { "Admin", "Tourist", "TravelAgency" };
 
+                // إنشاء الأدوار إذا لم تكن موجودة
                 foreach (var role in roles)
                 {
                     if (!await roleManager.RoleExistsAsync(role))
                     {
-                        await roleManager.CreateAsync(new IdentityRole<int> { Name = role });
+                        await roleManager.CreateAsync(new IdentityRole<int>(role));
+                    }
+                }
+
+                // إنشاء مستخدم الأدمن إذا لم يكن موجودًا
+                string adminEmail = "admin@gmail.com";
+                string adminPassword = "Admin@1234!";
+
+                if (await userManager.FindByEmailAsync(adminEmail) == null)
+                {
+                    var adminUser = new User
+                    {
+                        UserName = "admin",
+                        Email = adminEmail,
+                        PhoneNumber = "01234567890",
+                        Role = Role.Admin
+                    };
+
+                    var result = await userManager.CreateAsync(adminUser, adminPassword);
+
+                    if (result.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(adminUser, "Admin");
+                        Console.WriteLine("Admin user created successfully!");
+                        Console.WriteLine($"Email: {adminEmail}");
+                        Console.WriteLine($"Password: {adminPassword}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed to create admin user:");
+                        foreach (var error in result.Errors)
+                        {
+                            Console.WriteLine(error.Description);
+                        }
                     }
                 }
             }
 
-
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseHttpsRedirection();
-
-
             app.UseAuthentication();
-
-
             app.UseAuthorization();
-
-
             app.MapControllers();
 
             app.Run();

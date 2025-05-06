@@ -12,7 +12,7 @@ namespace TourManagementSystem.Data
 
             // Replace this with your actual connection string
             optionsBuilder.UseSqlServer(
-                "Server=DESKTOP-54FG73O\\SQLEXPRESS;Database=TourManagementDB;Trusted_Connection=True;TrustServerCertificate=True;");
+                "Server=MALAK;Database=TourManagementDB;Trusted_Connection=True;TrustServerCertificate=True;");
 
             return new AppDbContext(optionsBuilder.Options);
         }

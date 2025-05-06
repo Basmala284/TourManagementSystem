@@ -11,18 +11,31 @@ using TourManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using TourManagementSystem.DTOs;
 
-
 namespace TourManagementSystem.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthenticationController(UserManager<User> userManager, 
-        RoleManager<IdentityRole<int>> roleManager, 
-        IConfiguration configuration, 
-        JwtService jwtService,
-        SignInManager<User>? signInManager) : ControllerBase
+    public class AuthenticationController : ControllerBase
     {
-        private readonly SignInManager<User> _signInManager = signInManager;
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole<int>> _roleManager;
+        private readonly IConfiguration _configuration;
+        private readonly JwtService _jwtService;
+        private readonly SignInManager<User> _signInManager;
+
+        public AuthenticationController(
+            UserManager<User> userManager,
+            RoleManager<IdentityRole<int>> roleManager,
+            IConfiguration configuration,
+            JwtService jwtService,
+            SignInManager<User> signInManager)
+        {
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _configuration = configuration;
+            _jwtService = jwtService;
+            _signInManager = signInManager;
+        }
 
         [AllowAnonymous]
         [HttpPost("register")]
@@ -33,25 +46,15 @@ namespace TourManagementSystem.Controllers
                 return BadRequest("User is null");
             }
 
-            var existingUser = await userManager.FindByEmailAsync(userRegister.Email);
+            var existingUser = await _userManager.FindByEmailAsync(userRegister.Email);
             if (existingUser != null)
             {
                 return BadRequest("User already exists");
             }
 
-            Role userRole;
-
-            if (userRegister.Role is string roleString)
+            if (!Enum.TryParse(userRegister.Role, true, out Role userRole) || !Enum.IsDefined(typeof(Role), userRole))
             {
-                if (!Enum.TryParse(roleString, true, out userRole) || !Enum.IsDefined(typeof(Role), userRole))
-                {
-                    return BadRequest("Invalid role specified. Allowed roles are: Admin, Tourist, TravelAgency.");
-                }
-            }
-     
-            else
-            {
-                return BadRequest("Invalid role format.");
+                return BadRequest("Invalid role specified. Allowed roles are: Admin, Tourist, TravelAgency.");
             }
 
             var newUser = new User
@@ -62,13 +65,19 @@ namespace TourManagementSystem.Controllers
                 Role = userRole
             };
 
-            var result = await userManager.CreateAsync(newUser, userRegister.Password);
+            var result = await _userManager.CreateAsync(newUser, userRegister.Password);
             if (!result.Succeeded)
             {
                 return BadRequest(result.Errors);
             }
 
-            await userManager.AddToRoleAsync(newUser, userRole.ToString());
+            // إنشاء الرول إذا لم تكن موجودة
+            if (!await _roleManager.RoleExistsAsync(userRole.ToString()))
+            {
+                await _roleManager.CreateAsync(new IdentityRole<int>(userRole.ToString()));
+            }
+
+            await _userManager.AddToRoleAsync(newUser, userRole.ToString());
 
             return Ok($"User registered successfully with role: {userRole}");
         }
@@ -79,39 +88,48 @@ namespace TourManagementSystem.Controllers
         {
             if (userLogin == null)
             {
-                return BadRequest("User is null");
+                return BadRequest("Invalid request");
             }
 
-            var user = await userManager.FindByEmailAsync(userLogin.Email);
+            var user = await _userManager.FindByEmailAsync(userLogin.Email);
             if (user == null)
             {
-                return BadRequest("User not found");
+                return Unauthorized(new { message = "Invalid credentials" });
             }
 
-            if (await userManager.CheckPasswordAsync(user, userLogin.Password))
+            var passwordValid = await _userManager.CheckPasswordAsync(user, userLogin.Password);
+            if (!passwordValid)
             {
-                var roles = await userManager.GetRolesAsync(user);
-
-                var authResponse = await jwtService.GenerateJWTokenAsync(user.Id.ToString());
-
-                authResponse.Roles = roles;
-
-                return Ok(authResponse);
+                return Unauthorized(new { message = "Invalid credentials" });
             }
 
-            return Unauthorized();
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = await _jwtService.GenerateJWTokenAsync(user.Id.ToString());
+
+            var response = new
+            {
+                token = token,
+                user = new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    role = roles.FirstOrDefault() // أو user.Role.ToString() إذا كنت تريد استخدام القيمة من الـ Enum مباشرة
+                }
+            };
+
+            return Ok(response);
         }
 
-        //[Authorize]
-        //[HttpPost("LogOut")]
-        //public async Task<IActionResult> LogOut()
-        //{
-        //    await _signInManager.SignOutAsync();
-        //    var user = await _userManager.GetUserAsync(User);
-        //    if (user == null) return BadRequest("not found");
-        //    await _userManager.UpdateSecurityStampAsync(user);
-        //    return Ok("log Out succesfully");
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return BadRequest("User not found");
 
-        //}
+            await _userManager.UpdateSecurityStampAsync(user);
+            return Ok(new { message = "Logout successful" });
+        }
     }
 }
