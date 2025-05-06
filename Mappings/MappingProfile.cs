@@ -7,7 +7,7 @@ using TourManagementSystem.DTOs.Message;
 using TourManagementSystem.DTOs.Review;
 using TourManagementSystem.DTOs.TripCategory;
 using TourManagementSystem.DTOs.TripPackage;
-using TourManagementSystem.DTOs.User;
+//using TourManagementSystem.DTOs.User;
 using TourManagementSystem.DTOs.Users;
 using TourManagementSystem.Models;
 using TourManagementSystem.Models.Entities;

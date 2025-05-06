@@ -4,7 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using TourManagementSystem.DTOs.User;
+using TourManagementSystem.DTOs.Users;
 using TourManagementSystem.Models.Entities;
 using TourManagementSystem.Models.Enums;
 using TourManagementSystem.Services;

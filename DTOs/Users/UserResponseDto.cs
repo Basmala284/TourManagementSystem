@@ -1,12 +1,23 @@
-﻿using TourManagementSystem.Models.Enums;
+﻿using TourManagementSystem.Models.Entities;
+using TourManagementSystem.Models.Enums;
 
-namespace TourManagementSystem.DTOs.Users;
-
-public class UserResponseDto (Models.Entities.User user)
+namespace TourManagementSystem.DTOs.Users
 {
-    public int Id { get; set; } = user.Id;
-    public string UserName { get; set; } = user.UserName;
-    public string? Email { get; set; } = user.Email;
-    public Role Role { get; set; } = user.Role;
-    public string? PhoneNumber { get; set; } = user.PhoneNumber;
+    public class UserResponseDto
+    {
+        public int Id { get; set; }
+        public string UserName { get; set; }
+        public string Email { get; set; }
+        public Role Role { get; set; }
+        public string PhoneNumber { get; set; }
+
+        public UserResponseDto(User user)
+        {
+            Id = user.Id;
+            UserName = user.UserName;
+            Email = user.Email;
+            Role = user.Role;
+            PhoneNumber = user.PhoneNumber;
+        }
+    }
 }
